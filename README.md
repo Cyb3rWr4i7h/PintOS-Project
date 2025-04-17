@@ -61,13 +61,18 @@ The purpose of this project was to implement a simple **threading system** and *
 ### 1. Thread Scheduling
 - The thread scheduler uses **priority scheduling** by default, where each thread is assigned a priority, and the highest priority thread is scheduled first.
 - **MLFQS** is enabled by a kernel command-line option (`-o mlfqs`) and uses a multi-level feedback queue to adjust the priority of threads based on their recent CPU usage.
-
+- **Priority Update** after each time slice for each thread is based on recent cpu utilisation by thread and its nice value:  
+  ```c
+  const int PRI_MAX = 63;    /* Maximum priority value */
+  priority = PRI_MAX - (recent_cpu / 4) - (nice * 2);
+  
 ### 2. Priority Donation
-- **Priority donation** ensures that a thread holding a lock with a lower priority can donate its priority to the thread that is waiting for the lock, preventing **priority inversion**.
+- **Priority donation** ensures that a thread holding a lock with a lower priority can take the priority of a thread which has higher priority and is waiting for the lock, preventing **priority inversion**.
+- It supports nested donations (at max 8). 
 
 ### 3. Timer and Preemption
 - The system uses a timer interrupt (`TIMER_FREQ`) to simulate **time slices**. The **`thread_tick()`** function is invoked each time the timer interrupts, which checks if the current thread has exhausted its time slice and, if so, preempts it by invoking **`thread_yield()`**.
-
+- **Priority Check**: During each timer tick, if another thread in the ready queue has a higher priority than the running thread, a context switch is triggered using `intr_yield_on_return()` which forces the running thread to yield its state to the thread with the highest priority in the ready queue.
 
 ## Credits
 - **Stanford University** for providing the PintOS project as part of the Operating Systems course.
